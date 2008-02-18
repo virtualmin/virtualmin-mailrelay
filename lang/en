@@ -1,0 +1,11 @@
+feat_name=SMTP Mail Filter
+feat_losing=The system will no longer filter and forward mail for the domain
+feat_label=Filter and forward email?
+feat_echeck=This plugin requires that the Sendmail mail server be installed and running.
+feat_emaster=Filtered email cannot be enabled until a default destination SMTP server has been specified in the server template (in the <b>Plugin options</b> section)
+feat_email=Local mail delivery and forwarding cannot both be enabled for the same domain
+
+tmpl_server=Default destination SMTP server
+tmpl_notset=Not set
+tmpl_host=Hostname
+tmpl_emaster=Missing or invalid destination SMTP server

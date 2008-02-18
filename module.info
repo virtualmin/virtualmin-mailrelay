@@ -1,0 +1,3 @@
+desc=Virtualmin SMTP Mail Filter
+category=servers
+depends=virtual-server sendmail
