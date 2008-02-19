@@ -1,11 +1,22 @@
-feat_name=SMTP Mail Filter
-feat_losing=The system will no longer filter and forward mail for the domain
-feat_label=Filter and forward email?
-feat_echeck=This plugin requires that the Sendmail mail server be installed and running.
-feat_emaster=Filtered email cannot be enabled until a default destination SMTP server has been specified in the server template (in the <b>Plugin options</b> section)
-feat_email=Local mail delivery and forwarding cannot both be enabled for the same domain
+feat_name=Mail Relay
+feat_losing=The system will no longer relay or filter mail for the domain
+feat_label=Relay mail for domain?
+feat_echeck=This plugin requires that Virtualmin be configured to use either the Postfix or Sendmail mail server
+feat_emaster=Mail relaying cannot be enabled until a default destination SMTP server has been specified in the server template (in the <b>Plugin options</b> section)
+feat_email=Local mail delivery and relaying cannot both be enabled for the same domain
+feat_echeckmail=The mail feature is not enabled in Virtualmin - mail relaying cannot be used without it
+feat_echeckmailertable=The Sendmail configuration is missing support for Domain Routing (mailertable)
+feat_eclashmailertable=A Sendmail domain routing entry already exists for this domain
+feat_eclashtrans=A Postfix transport mapping entry already exists for this domain
+feat_echecktrans=The Postfix configuration does not have any Transport Mapping tables defined
+feat_echeckmap=The transport mapping source <tt>$1</tt> is not supported by Postfix - you may need to install Postfix libraries for it, or re-compile
+feat_echeckmapaccess=The transport mapping source <tt>$1</tt> cannot be used : $2
 
 tmpl_server=Default destination SMTP server
 tmpl_notset=Not set
 tmpl_host=Hostname
 tmpl_emaster=Missing or invalid destination SMTP server
+
+setup_relay=Setting up mail relaying ..
+setup_eserver=.. no default destination SMTP server has been defined!
+setup_done=.. configured relay to $1

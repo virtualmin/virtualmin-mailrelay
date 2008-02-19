@@ -1,6 +1,9 @@
-# Defines functions for this feature
+# XXX support Sendmail and Postfix
+# XXX spam filtering optional
+# XXX add DNS records
+# XXX for sendmail, need to add to local domains?
 
-require 'virtualmin-milter-lib.pl';
+require 'virtualmin-mailrelay-lib.pl';
 $input_name = $module_name;
 $input_name =~ s/[^A-Za-z0-9]/_/g;
 
@@ -38,8 +41,45 @@ return 'feat';
 # or an error message if not
 sub feature_check
 {
-return &foreign_installed("sendmail", 1) == 2 ? undef :
-	&text('feat_echeck', '../sendmail/');
+if (!$virtual_server::config{'mail'}) {
+	return $text{'feat_echeckmail'};
+	}
+&virtual_server::require_mail();
+if ($virtual_server::config{'mail_system'} == 0) {
+	# Check for Postfix transport map
+	local $trans = &postfix::get_real_value("transport_maps");
+	$trans || return $text{'feat_echecktrans'};
+	if (defined(&postfix::can_access_map)) {
+		local @tv = &postfix::get_maps_types_files("transport_maps");
+		foreach my $tv (@tv) {
+			if (!&postfix::supports_map_type($tv->[0])) {
+				return &text('feat_echeckmap',
+					     "$tv->[0]:$tv->[1]");
+				}
+			local $err = &postfix::can_access_map(@$tv);
+			if ($err) {
+				return &text('feat_echeckmapaccess',
+					     "$tv->[0]:$tv->[1]", $err);
+				}
+			}
+		}
+	# XXX check spam filter?
+	return undef;
+	}
+elsif ($virtual_server::config{'mail_system'} == 1) {
+	# Check for Sendmail mailertable
+	&foreign_require("sendmail", "mailers-lib.pl");
+	local ($mdbm, $mtype) = &sendmail::mailers_dbm(
+					&sendmail::get_sendmailcf());
+	if (!$mdbm) {
+		return $text{'feat_echeckmailertable'};
+		}
+	# XXX check milter
+	return undef;
+	}
+else {
+	return $text{'feat_echeck'};
+	}
 }
 
 # feature_depends(&domain)
@@ -58,11 +98,29 @@ return $mip eq '' || $mip eq 'none' ? $text{'feat_eserver'} : undef;
 # feature_clash(&domain)
 # Returns undef if there is no clash for this domain for this feature, or
 # an error message if so.
-# Checks for a DNS zone with the same name.
+# Checks for a mailertable entry on Sendmail
 sub feature_clash
 {
 local ($d) = @_;
-# XXX
+&virtual_server::require_mail();
+if ($virtual_server::config{'mail_system'} == 0) {
+	# Check for transport entry
+	local $trans = &postfix::get_maps("transport_maps");
+	local ($clash) = grep { $_->{'name'} eq $_[0]->{'dom'} } @$trans;
+	if ($clash) {
+		return $text{'feat_eclashtrans'};
+		}
+	}
+elsif ($virtual_server::config{'mail_system'} == 1) {
+	# Check for mailertable entry
+	&foreign_require("sendmail", "mailers-lib.pl");
+	local $mfile = &mailers_file(&sendmail::get_sendmailcf());
+	local @mailers = &list_mailers($mfile);
+	local ($clash) = grep { $_->{'domain'} eq $_[0]->{'dom'} } @mailers;
+	if ($clash) {
+		return $text{'feat_eclashmailertable'};
+		}
+	}
 return undef;
 }
 
@@ -77,119 +135,82 @@ return !$aliasdom;
 }
 
 # feature_setup(&domain)
-# Called when this feature is added, with the domain object as a parameter
+# Called when this feature is added, with the domain object as a parameter.
+# Adds a mailertable or transport entry
 sub feature_setup
 {
 local ($d) = @_;
 local $tmpl = &virtual_server::get_template($d->{'template'});
-local @mips = split(/\s+/, $tmpl->{$module_name."master"});
-&$virtual_server::first_print($text{'setup_bind'});
-if (!@mips) {
-	&$virtual_server::second_print($text{'setup_emaster'});
+local $server = $tmpl->{$module_name."server"};
+&$virtual_server::first_print($text{'setup_relay'});
+if (!$server) {
+	&$virtual_server::second_print($text{'setup_eserver'});
 	return 0;
 	}
+if (defined(&virtual_server::obtain_lock_mail)) {
+	&virtual_server::obtain_lock_mail($d);
+	}
+
+# Add relay for domain, using appropriate mail server
+if ($virtual_server::config{'mail_system'} == 0) {
+	# Add SMTP transport
+	local $map = { 'name' => $d->{'dom'},
+		       'value' => "smtp:[$server]" };
+	&postfix::create_mapping("transport_maps", $map);
+	&postfix::regenerate_any_table("transport_maps");
+	}
+elsif ($virtual_server::config{'mail_system'} == 1) {
+	# Add mailertable entry
+	&foreign_require("sendmail", "mailers-lib.pl");
+	local $conf = &sendmail::get_sendmailcf();
+	local ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
+	local $mfile = &mailers_file($conf);
+	&sendmail::create_mailer($map, $mfile, $mdbm, $mtype);
+	}
+
+# Setup spam filter
+# XXX
+
+if (defined(&virtual_server::release_lock_mail)) {
+	&virtual_server::release_lock_mail($d);
+	}
+&$virtual_server::second_print(&text('setup_done', $server));
+
+# Add DNS MX record for this domain, pointing to this system
+&virtual_server::require_dns();
 if (defined(&virtual_server::obtain_lock_dns)) {
 	&virtual_server::obtain_lock_dns($d, 1);
 	}
 
-# Create the slave zone directive
-&virtual_server::require_bind();
-local $conf = &bind8::get_config();
-local $dir = {
-	 'name' => 'zone',
-	 'values' => [ $d->{'dom'} ],
-	 'type' => 1,
-	 'members' => [ { 'name' => 'type',
-			  'values' => [ 'slave' ] },
-			{ 'name' => 'masters',
-			  'type' => 1,
-			  'members' => [ map { { 'name' => $_ } } @mips ] } ],
-	};
-
-# Allow masters to update
-my $also = { 'name' => 'allow-update',
-	     'type' => 1,
-	     'members' => [ ] };
-foreach my $ip (@mips) {
-	push(@{$also->{'members'}}, { 'name' => $ip });
+local $z = &virtual_server::get_bind_zone($d->{'dom'});
+local $file = &bind8::find("file", $z->{'members'});
+local $fn = $file->{'values'}->[0];
+local $zonefile = &bind8::make_chroot($fn);
+local @recs = &bind8::read_zone_file($fn, $d->{'dom'});
+local ($mx) = grep { $_->{'type'} eq 'MX' &&
+		     $_->{'name'} eq $d->{'dom'}."." ||
+		     $_->{'type'} eq 'A' &&
+		     $_->{'name'} eq "mail.".$d->{'dom'}."." } @recs;
+if (!$mx) {
+	&$virtual_server::first_print($virtual_server::text{'save_dns4'});
+	local $ip = $d->{'dns_ip'} || $d->{'ip'};
+	&virtual_server::create_mx_records($fn, $d, $ip);
+	&bind8::bump_soa_record($fn, \@recs);
+	&$virtual_server::second_print($virtual_server::text{'setup_done'});
+	&virtual_server::register_post_action(\&virtual_server::restart_bind);
 	}
-push(@{$dir->{'members'}}, $also);
-
-# Create and add slave file
-local $base = $bind8::config{'slave_dir'} || &bind8::base_directory();
-local $file = &bind8::automatic_filename($d->{'dom'}, 0, $base);
-push(@{$dir->{'members'}}, { 'name' => 'file',
-			     'values' => [ $file ] } );
-&open_tempfile(ZONE, ">".&bind8::make_chroot($file), 0, 1);
-&close_tempfile(ZONE);
-&bind8::set_ownership(&bind8::make_chroot($file));
-
-# Work out where to add
-local $pconf;
-local $indent = 0;
-if ($tmpl->{$module_name.'view'}) {
-	# Adding inside a view. This may use named.conf, or an include
-	# file references inside the view, if any
-	$pconf = &bind8::get_config_parent();
-	local $view = &virtual_server::get_bind_view($conf,
-			$tmpl->{$module_name.'view'});
-	if ($view) {
-		local $addfile = &bind8::add_to_file();
-		local $addfileok;
-		if ($bind8::config{'zones_file'} &&
-		    $view->{'file'} ne $bind8::config{'zones_file'}) {
-			# BIND module config asks for a file .. make
-			# sure it is included in the view
-			foreach my $vm (@{$view->{'members'}}) {
-				if ($vm->{'file'} eq $addfile) {
-					# Add file is OK
-					$addfileok = 1;
-					}
-				}
-			}
-
-		if (!$addfileok) {
-			# Add to named.conf
-			$pconf = $view;
-			$indent = 1;
-			$dir->{'file'} = $view->{'file'};
-			}
-		else {
-			# Add to the file
-			$dir->{'file'} = $addfile;
-			$pconf = &bind8::get_config_parent($addfile);
-			}
-		}
-	else {
-		&error(&virtual_server::text('setup_ednsview',
-			     $tmpl->{$module_name.'view'}));
-		}
-	}
-else {
-	# Adding at top level .. but perhaps in a different file
-	$dir->{'file'} = &bind8::add_to_file();
-	$pconf = &bind8::get_config_parent($dir->{'file'});
-	}
-
-# Add to .conf file
-&bind8::save_directive($pconf, undef, [ $dir ], $indent);
-&flush_file_lines($dir->{'file'});
-unlink($bind8::zone_names_cache);
-undef(@bind8::list_zone_names_cache);
 
 if (defined(&virtual_server::release_lock_dns)) {
 	&virtual_server::release_lock_dns($d, 1);
 	}
 
 # All done
-&virtual_server::register_post_action(\&virtual_server::restart_bind);
-&$virtual_server::second_print(&text('setup_done', join(' ', @mips)));
 return 1;
 }
 
 # feature_modify(&domain, &olddomain)
 # Called when a domain with this feature is modified.
-# Renames the zone and file if the domain name is changed.
+# Renames the mailertable or transport entry
 sub feature_modify
 {
 local ($d, $oldd) = @_;
@@ -294,17 +315,10 @@ return 1;
 # or 0 if not
 sub feature_import
 {
-# XXX check for mailertable
 local ($dname, $user, $db) = @_;
-local $z = &virtual_server::get_bind_zone($d->{'dom'});
-if ($z) {
-	local $type = &bind8::find("type", $z->{'members'});
-	if ($type && ($type->{'values'}->[0] eq 'slave' ||
-		      $type->{'values'}->[0] eq 'stub')) {
-		return 1;
-		}
-	}
-return 0;
+local $fake = { 'dom' => $dname };
+local $err = &feature_clash($fake);
+return $err ? 1 : 0;
 }
 
 # feature_links(&domain)

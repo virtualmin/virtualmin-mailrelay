@@ -1,3 +1,4 @@
-desc=Virtualmin SMTP Mail Filter
+desc=Virtualmin Mail Relay
 category=servers
-depends=virtual-server sendmail
+depends=virtual-server 1.390
+hidden=1
