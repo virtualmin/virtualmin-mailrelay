@@ -12,7 +12,7 @@ feat_echecktrans=The Postfix configuration does not have any Transport Mapping t
 feat_echeckmap=The transport mapping source <tt>$1</tt> is not supported by Postfix - you may need to install Postfix libraries for it, or re-compile
 feat_echeckmapaccess=The transport mapping source <tt>$1</tt> cannot be used : $2
 
-tmpl_server=Default destination SMTP server
+tmpl_server=Default destination SMTP relay server
 tmpl_notset=Not set
 tmpl_host=Hostname
 tmpl_emaster=Missing or invalid destination SMTP server
@@ -20,3 +20,20 @@ tmpl_emaster=Missing or invalid destination SMTP server
 setup_relay=Setting up mail relaying ..
 setup_eserver=.. no default destination SMTP server has been defined!
 setup_done=.. configured relay to $1
+
+modify_relay=Changing mail relay domain ..
+modify_emailertable=.. no mailer table entry found!
+modify_etransport=.. no transport map entry found!
+
+delete_relay=Removing mail relaying ..
+
+validate_etransport=No entry to relay for the domain was found in the Postfix transport map
+validate_emailertable=No entry to relay for the domain was found in the Sendmail mailer table
+
+edit_title=Configure Mail Relaying
+edit_ecannot=You are not allowed to configure relaying for this domain
+edit_erelay=Relaying is not set up for this domain
+edit_header=Mail relay options
+edit_relay=Destination SMTP server
+
+links_link=Configure Mail Relaying
