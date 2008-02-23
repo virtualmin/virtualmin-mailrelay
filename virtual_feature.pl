@@ -1,8 +1,8 @@
-# XXX test on postfix
-# XXX backup and restore
 # XXX docs
 #	XXX mimedefang setup (filter_recipient, -t flag, general install)
 # XXX mailscanner support?
+# XXX add to repos
+# XXX quarantine management, per domain
 
 require 'virtualmin-mailrelay-lib.pl';
 $input_name = $module_name;
@@ -398,61 +398,40 @@ else {
 # feature_backup(&domain, file, &opts, &all-opts)
 # Called to backup this feature for the domain to the given file. Must return 1
 # on success or 0 on failure.
-# Saves the named.conf block for this domain.
+# Just saves the relay dest and spam flag
 sub feature_backup
 {
-# XXX what needs to be done here?
 local ($d, $file) = @_;
 &$virtual_server::first_print($text{'backup_conf'});
-local $z = &virtual_server::get_bind_zone($d->{'dom'});
-if ($z) {
-	local $lref = &read_file_lines($z->{'file'}, 1);
-	local $dstlref = &read_file_lines($file);
-	@$dstlref = @$lref[$z->{'line'} .. $z->{'eline'}];
-	&flush_file_lines($file);
-	&$virtual_server::second_print($virtual_server::text{'setup_done'});
-	return 1;
+local %binfo;
+$binfo{'dest'} = &get_relay_destination($d->{'dom'});
+if (&can_domain_filter()) {
+	$binfo{'filter'} = &get_domain_filter($d->{'dom'});
 	}
-else {
-	&$virtual_server::second_print($virtual_server::text{'backup_dnsnozone'});
-	return 0;
-	}
+&write_file($file, \%binfo);
+&$virtual_server::second_print($virtual_server::text{'setup_done'});
+return 1;
 }
 
 # feature_restore(&domain, file, &opts, &all-opts)
 # Called to restore this feature for the domain from the given file. Must
-# return 1 on success or 0 on failure
+# return 1 on success or 0 on failure.
+# Just re-sets the old relay dest and spam filter
 sub feature_restore
 {
-# XXX what needs to be done here?
 local ($d, $file) = @_;
 &$virtual_server::first_print($text{'restore_conf'});
-
-if (defined(&virtual_server::obtain_lock_dns)) {
-	&virtual_server::obtain_lock_dns($d, 1);
+&obtain_lock_virtualmin_mailrelay($d);
+local %binfo;
+&read_file($file, \%binfo);
+if ($binfo{'dest'} ne '') {
+	&save_relay_destination($d->{'dom'}, $binfo{'dest'});
 	}
-
-local $z = &virtual_server::get_bind_zone($d->{'dom'});
-local $rv;
-if ($z) {
-	local $lref = &read_file_lines($z->{'file'});
-	local $srclref = &read_file_lines($file, 1);
-	splice(@$lref, $z->{'line'}, $z->{'eline'}-$z->{'line'}+1, @$srclref);
-	&flush_file_lines($z->{'file'});
-
-	&virtual_server::register_post_action(\&virtual_server::restart_bind);
-	&$virtual_server::second_print($virtual_server::text{'setup_done'});
-	$rv = 1;
+if ($binfo{'filter'} ne '' && &can_domain_filter()) {
+	&save_domain_filter($d->{'dom'}, $binfo{'filter'});
 	}
-else {
-	&$virtual_server::second_print(
-		$virtual_server::text{'backup_dnsnozone'});
-	$rv = 0;
-	}
-
-if (defined(&virtual_server::release_lock_dns)) {
-	&virtual_server::release_lock_dns($d, 1);
-	}
+&release_lock_virtualmin_mailrelay($d);
+&$virtual_server::second_print($virtual_server::text{'setup_done'});
 return $rv;
 }
 

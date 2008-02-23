@@ -166,7 +166,7 @@ sub get_domain_filter
 {
 local ($dname) = @_;
 local $lref = &read_file_lines($config{'domains_file'}, 1);
-return &indexoflc($dname, @$lref) >= 0;
+return &indexoflc($dname, @$lref) >= 0 ? 1 : 0;
 }
 
 # save_domain_filter(dname, flag)
