@@ -1,0 +1,3 @@
+scanner=Relayed email scanner,1,0-None,1-MIMEdefang
+domains_file=File containing domains to filter mail in,3,None
+mimedefang_script=MIMEdefang configuration script,8

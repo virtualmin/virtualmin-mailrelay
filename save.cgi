@@ -24,7 +24,23 @@ gethostbyname($in{'relay'}) || &error($text{'save_erelay'});
 &save_relay_destination($in{'dom'}, $in{'relay'});
 &$virtual_server::second_print($virtual_server::text{'setup_done'});
 
-# XXX update spam settings
+if (&can_domain_filter() && defined($in{'filter'})) {
+	$old = &get_domain_filter($d->{'dom'});
+	if ($in{'filter'} && !$old) {
+		# Turn on spam filter
+		&$virtual_server::first_print($text{'save_spamon'});
+		&save_domain_filter($d->{'dom'}, 1);
+		&$virtual_server::second_print(
+			$virtual_server::text{'setup_done'});
+		}
+	elsif (!$in{'filter'} && $old) {
+		# Turn off spam filter
+		&$virtual_server::first_print($text{'save_spamoff'});
+		&save_domain_filter($d->{'dom'}, 0);
+		&$virtual_server::second_print(
+			$virtual_server::text{'setup_done'});
+		}
+	}
 
 &webmin_log("save", undef, $in{'dom'});
 &ui_print_footer("edit.cgi?dom=$in{'dom'}", $text{'edit_return'});

@@ -1,8 +1,8 @@
-# XXX spam filtering optional
-# XXX access control
-# XXX lock the right file
 # XXX test on postfix
 # XXX backup and restore
+# XXX docs
+#	XXX mimedefang setup (filter_recipient, -t flag, general install)
+# XXX mailscanner support?
 
 require 'virtualmin-mailrelay-lib.pl';
 $input_name = $module_name;
@@ -64,8 +64,6 @@ if ($virtual_server::config{'mail_system'} == 0) {
 				}
 			}
 		}
-	# XXX check spam filter?
-	return undef;
 	}
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Check for Sendmail mailertable
@@ -75,12 +73,13 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 	if (!$mdbm) {
 		return $text{'feat_echeckmailertable'};
 		}
-	# XXX check milter
-	return undef;
 	}
 else {
 	return $text{'feat_echeck'};
 	}
+
+# Check spam filter
+return &check_spam_filter();
 }
 
 # feature_depends(&domain)
@@ -171,7 +170,9 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 	}
 
 # Setup spam filter
-# XXX
+if (&can_domain_filter() && $tmpl->{$module_name."filter"} eq "yes") {
+	&save_domain_filter($d->{'dom'}, 1);
+	}
 
 &release_lock_virtualmin_mailrelay($d);
 &$virtual_server::second_print(&text('setup_done', $server));
@@ -252,6 +253,7 @@ if ($d->{'dom'} ne $oldd->{'dom'}) {
 				    @mailers;
 		if ($old) {
 			local $nw = { %$old };
+			$nw->{'domain'} = $d->{'dom'};
 			&sendmail::modify_mailer($old, $nw, $mfile,
 						 $mdbm, $mtype);
 			&$virtual_server::second_print(
@@ -262,11 +264,16 @@ if ($d->{'dom'} ne $oldd->{'dom'}) {
 				$text{'modify_emailertable'});
 			}
 		}
-	&release_lock_virtualmin_mailrelay($d);
 
-	# XXX spam settings?
+	# Change domain name to filter
+	if (&can_domain_filter()) {
+		local $filter = &get_domain_filter($oldd->{'dom'});
+		&save_domain_filter($oldd->{'dom'}, 0);
+		&save_domain_filter($d->{'dom'}, $filter);
+		}
 
 	# All done
+	&release_lock_virtualmin_mailrelay($d);
 	return 1;
 	}
 return 1;
@@ -312,6 +319,11 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 	else {
 		&$virtual_server::second_print($text{'modify_emailertable'});
 		}
+	}
+
+# Turn off spam
+if (&can_domain_filter()) {
+	&save_domain_filter($d->{'dom'}, 0);
 	}
 &release_lock_virtualmin_mailrelay($d);
 
@@ -484,6 +496,18 @@ $rv .= &ui_table_row($text{'tmpl_server'},
 		  [ 2, $text{'tmpl_host'} ] ])."\n".
 	&ui_textbox($input_name, $v eq "none" ? undef : $v, 30));
 
+# Default filter mode, if possible
+if (&can_domain_filter()) {
+	local $v = $tmpl->{$module_name."filter"};
+	$v = "no" if (!defined($v) && $tmpl->{'default'});
+	$rv .= &ui_table_row($text{'tmpl_filter'},
+	    &ui_radio($input_name."_filter",
+		$v eq "" ? 0 : $v eq "no" ? 1 : 2,
+		[ $tmpl->{'default'} ? ( ) : ( [ 0, $text{'default'} ] ),
+		  [ 2, $text{'yes'} ],
+		  [ 1, $text{'no'} ] ]));
+	}
+
 return $rv;
 }
 
@@ -506,6 +530,13 @@ else {
 		&error($text{'tmpl_emaster'});
         $tmpl->{$module_name."server"} = $in->{$input_name};
         }
+
+# Parse filter field
+if (defined($in->{$input_name."_filter"})) {
+	$tmpl->{$module_name."filter"} =
+		$in->{$input_name."_filter"} == 0 ? undef :
+		$in->{$input_name."_filter"} == 1 ? "no" : "yes";
+	}
 }
 
 1;

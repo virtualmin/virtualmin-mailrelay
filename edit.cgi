@@ -22,6 +22,12 @@ print &ui_table_start($text{'edit_header'}, undef, 2, [ "width=30%" ]);
 print &ui_table_row($text{'edit_relay'},
 	&ui_textbox("relay", $relay, 30));
 
+# Filter spam?
+if (&can_domain_filter()) {
+	print &ui_table_row($text{'edit_filter'},
+		&ui_yesno_radio("filter", &get_domain_filter($d->{'dom'})));
+	}
+
 print &ui_table_end();
 print &ui_form_end([ [ undef, $text{'save'} ] ]);
 

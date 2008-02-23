@@ -11,11 +11,13 @@ feat_eclashtrans=A Postfix transport mapping entry already exists for this domai
 feat_echecktrans=The Postfix configuration does not have any Transport Mapping tables defined
 feat_echeckmap=The transport mapping source <tt>$1</tt> is not supported by Postfix - you may need to install Postfix libraries for it, or re-compile
 feat_echeckmapaccess=The transport mapping source <tt>$1</tt> cannot be used : $2
+feat_eserver=Mail relaying cannot be enabled until a default destination SMTP server has been specified in the server template (in the Plugin options section)
 
 tmpl_server=Default destination SMTP relay server
 tmpl_notset=Not set
 tmpl_host=Hostname
 tmpl_emaster=Missing or invalid destination SMTP server
+tmpl_filter=Filter spam and viruses by default?
 
 setup_relay=Setting up mail relaying ..
 setup_eserver=.. no default destination SMTP server has been defined!
@@ -37,12 +39,21 @@ edit_header=Mail relay options
 edit_relay=Destination SMTP server
 edit_edomain=Virtualmin domain not found!
 edit_return=relay form
+edit_filter=Filter spam and viruses when relaying?
 
 save_err=Failed to configure mail relaying
 save_enone=No destination SMTP server entered
 save_erelay=Destination SMTP server does not exist
 save_doing=Updating destination SMTP server ..
+save_spamon=Enabling filtering for relayed email ..
+save_spamoff=Disabling filtering for relayed email ..
 
 links_link=Configure Mail Relaying
 
 log_save=Change mail relaying for $1
+
+defang_esendmail=The MIMEdefang mail filter can only be used with Sendmail
+defang_efeature=MIMEdefang does not appear to be enabled in the Sendmail configuration file $1
+defang_eprocess=The MIMEdefang process is not running on your system. Maybe it is not installed, or has not been started.
+defang_escript=The MIMEdefang configuration script $1 was not found. Maybe it is not install, or the <a href='$2'>module configuration</a> is incorrect.
+defang_efile=The MIMEdefang configuration script $1 does not appear to be setup to read the file $2 which specifies domaisn to filter mail for. Either fix it, or disable this feature on the <a href='$3'>module configuration</a> page.

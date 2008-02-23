@@ -17,6 +17,56 @@ else {
 	}
 }
 
+# can_domain_filter()
+# Returns 1 if we can configure per-domain filtering
+sub can_domain_filter
+{
+return $config{'scanner'} == 1 &&
+       $config{'domains_file'};
+}
+
+# check_spam_filter()
+# Checks if the configured spam filter is installed, and returns an error
+# message if not.
+sub check_spam_filter
+{
+if ($config{'scanner'} == 1) {
+	# Check for MIMEdefang. This only works with Sendmail, and must be
+	# setup and running.
+	&virtual_server::require_mail();
+	$virtual_server::config{'mail_system'} == 1 ||
+		return $text{'defang_esendmail'};
+	&foreign_require("sendmail", "features-lib.pl");
+	local @feats = &sendmail::list_features();
+	if (@feats) {
+		local ($mdf) = grep {
+		    $_->{'text'} =~ /INPUT_MAIL_FILTER.*mimedefang/ } @feats;
+		$mdf || return &text('defang_efeature',
+				     "<tt>$config{'sendmail_mc'}</tt>");
+		}
+	local @pids = &find_byname("mimedefang.pl");
+	@pids || return $text{'defang_eprocess'};
+	-r $config{'mimedefang_script'} || return &text('defang_escript',
+		"<tt>$config{'mimedefang_script'}</tt>",
+		"../config.cgi?$module_name");
+	if ($config{'domains_file'}) {
+		local $lref = &read_file_lines($config{'mimedefang_script'}, 1);
+		local $found = 0;
+		foreach my $l (@$lref) {
+			$found++ if ($l =~ /\Q$config{'domains_file'}\E/);
+			}
+		$found || return &text('defang_efile',
+			"<tt>$config{'mimedefang_script'}</tt>",
+			"<tt>$config{'domains_file'}</tt>",
+			"../config.cgi?$module_name");
+		}
+	return undef;
+	}
+else {
+	return undef;
+	}
+}
+
 # get_relay_destination(domain)
 # Returns the SMTP server to relay email to for some domain
 sub get_relay_destination
@@ -110,9 +160,40 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 &release_lock_virtualmin_mailrelay();
 }
 
+# get_domain_filter(dname)
+# Return 1 if relay filtering is enabled for a domain
+sub get_domain_filter
+{
+local ($dname) = @_;
+local $lref = &read_file_lines($config{'domains_file'}, 1);
+return &indexoflc($dname, @$lref) >= 0;
+}
+
+# save_domain_filter(dname, flag)
+# Turns on or off  relay filtering for a domain
+sub save_domain_filter
+{
+local ($dname, $filter) = @_;
+local $lref = &read_file_lines($config{'domains_file'});
+local $idx = &indexoflc($dname, @$lref);
+if ($idx >= 0 && !$filter) {
+	# Remove from file
+	splice(@$lref, $idx, 1);
+	}
+elsif ($idx < 0 && $filter) {
+	# Add to file
+	push(@$lref, $dname);
+	}
+&flush_file_lines($config{'domains_file'});
+}
+
+# obtain_lock_virtualmin_mailrelay()
+# Lock the Sendmail or Postfix mail relay file
 sub obtain_lock_virtualmin_mailrelay
 {
-&virtual_server::obtain_lock_anything();
+if (defined(&virtual_server::obtain_lock_anything)) {
+	&virtual_server::obtain_lock_anything();
+	}
 if ($mail::got_lock_virtualmin_mailrelay == 0) {
 	&virtual_server::require_mail();
 	@main::got_lock_virtualmin_mailrelay_files = ( );
@@ -124,9 +205,14 @@ if ($mail::got_lock_virtualmin_mailrelay == 0) {
 		}
 	elsif ($virtual_server::config{'mail_system'} == 1) {
 		# Lock mailertable file
+		&foreign_require("sendmail", "mailers-lib.pl");
 		local $mfile = &sendmail::mailers_file(
 				&sendmail::get_sendmailcf());
 		push(@main::got_lock_virtualmin_mailrelay_files, $mfile);
+		}
+	if ($config{'domains_file'}) {
+		push(@main::got_lock_virtualmin_mailrelay_files,
+		     $config{'domains_file'});
 		}
 	@main::got_lock_virtualmin_mailrelay_files =
 		grep { /^\// } @main::got_lock_virtualmin_mailrelay_files;
@@ -137,6 +223,8 @@ if ($mail::got_lock_virtualmin_mailrelay == 0) {
 $mail::got_lock_virtualmin_mailrelay++;
 }
 
+# release_lock_virtualmin_mailrelay()
+# Unlock whatever files were locked by obtain_lock_virtualmin_mailrelay
 sub release_lock_virtualmin_mailrelay
 {
 if ($main::got_lock_virtualmin_mailrelay == 1) {
@@ -145,6 +233,9 @@ if ($main::got_lock_virtualmin_mailrelay == 1) {
 		}
 	}
 $main::got_lock_virtualmin_mailrelay-- if ($main::got_lock_virtualmin_mailrelay);
+if (defined(&virtual_server::release_lock_anything)) {
+	&virtual_server::release_lock_anything();
+	}
 }
 
 1;
