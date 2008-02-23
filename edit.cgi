@@ -8,6 +8,7 @@ require 'virtualmin-mailrelay-lib.pl';
 # Get and check the domain
 &can_edit_relay($in{'dom'}) || &error($text{'edit_ecannot'});
 $d = &virtual_server::get_domain_by("dom", $in{'dom'});
+$d || &error($text{'edit_edomain'});
 $relay = &get_relay_destination($in{'dom'});
 $relay || &error($text{'edit_erelay'});
 

@@ -1,4 +1,4 @@
 desc=Virtualmin Mail Relay
 category=servers
-depends=virtual-server 1.390
+depends=virtual-server/3.52 1.390
 hidden=1

@@ -1,50 +1,31 @@
 #!/usr/local/bin/perl
 # Update master server IPs
 
-require 'virtualmin-slavedns-lib.pl';
+require 'virtualmin-mailrelay-lib.pl';
 &ReadParse();
 &error_setup($text{'save_err'});
 
-if ($in{'adv'}) {
-	# Redirect to BIND module
-	&redirect("../bind8/edit_slave.cgi?zone=$in{'dom'}");
-	return;
-	}
-
 # Get and check the domain
-&can_edit_slave($in{'dom'}) || &error($text{'edit_ecannot'});
-$z = &virtual_server::get_bind_zone($in{'dom'});
-$z || &error($text{'edit_ezone'});
+&can_edit_relay($in{'dom'}) || &error($text{'edit_ecannot'});
 $d = &virtual_server::get_domain_by("dom", $in{'dom'});
-&virtual_server::require_bind();
+$d || &error($text{'edit_edomain'});
+$relay = &get_relay_destination($in{'dom'});
+$relay || &error($text{'edit_erelay'});
 
 # Validate inputs
-@mips = split(/\s+/, $in{'master'});
-foreach $ip (@mips) {
-	&check_ipaddress($ip) || &error(&text('save_emip', $ip));
-	}
-@mips || &error($text{'save_emips'});
+$in{'relay'} =~ /\S/ || &error($text{'save_enone'});
+gethostbyname($in{'relay'}) || &error($text{'save_erelay'});
 
 &ui_print_unbuffered_header(&virtual_server::domain_in($d),
 			    $text{'edit_title'}, "");
 
-# Update the .conf file
+# Update the mailertable
 &$virtual_server::first_print($text{'save_doing'});
-$masters = &bind8::find('masters', $z->{'members'});
-$oldmasters = { %$masters };
-$masters->{'members'} = [ map { { 'name' => $_ } } @mips ];
-&bind8::save_directive($z, [ $oldmasters ], [ $masters ], 1);
-$allow = &bind8::find('allow-update', $z->{'members'});
-if ($allow) {
-	$oldallow = { %$allow };
-	$allow->{'members'} = [ map { { 'name' => $_ } } @mips ];
-	&bind8::save_directive($z, [ $oldallow ], [ $allow ], 1);
-	}
-&flush_file_lines($z->{'file'});
+&save_relay_destination($in{'dom'}, $in{'relay'});
 &$virtual_server::second_print($virtual_server::text{'setup_done'});
 
-# Restart BIND
-&virtual_server::restart_bind($d);
+# XXX update spam settings
 
+&webmin_log("save", undef, $in{'dom'});
 &ui_print_footer("edit.cgi?dom=$in{'dom'}", $text{'edit_return'});
 

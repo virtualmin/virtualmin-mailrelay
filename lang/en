@@ -35,5 +35,14 @@ edit_ecannot=You are not allowed to configure relaying for this domain
 edit_erelay=Relaying is not set up for this domain
 edit_header=Mail relay options
 edit_relay=Destination SMTP server
+edit_edomain=Virtualmin domain not found!
+edit_return=relay form
+
+save_err=Failed to configure mail relaying
+save_enone=No destination SMTP server entered
+save_erelay=Destination SMTP server does not exist
+save_doing=Updating destination SMTP server ..
 
 links_link=Configure Mail Relaying
+
+log_save=Change mail relaying for $1

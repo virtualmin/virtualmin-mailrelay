@@ -1,6 +1,8 @@
 # XXX spam filtering optional
-# XXX CGI page to edit
 # XXX access control
+# XXX lock the right file
+# XXX test on postfix
+# XXX backup and restore
 
 require 'virtualmin-mailrelay-lib.pl';
 $input_name = $module_name;
@@ -146,9 +148,7 @@ if (!$server) {
 	&$virtual_server::second_print($text{'setup_eserver'});
 	return 0;
 	}
-if (defined(&virtual_server::obtain_lock_mail)) {
-	&virtual_server::obtain_lock_mail($d);
-	}
+&obtain_lock_virtualmin_mailrelay($d);
 
 # Add relay for domain, using appropriate mail server
 if ($virtual_server::config{'mail_system'} == 0) {
@@ -173,9 +173,7 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 # Setup spam filter
 # XXX
 
-if (defined(&virtual_server::release_lock_mail)) {
-	&virtual_server::release_lock_mail($d);
-	}
+&release_lock_virtualmin_mailrelay($d);
 &$virtual_server::second_print(&text('setup_done', $server));
 
 # Add DNS MX record for this domain, pointing to this system
@@ -223,10 +221,7 @@ sub feature_modify
 local ($d, $oldd) = @_;
 if ($d->{'dom'} ne $oldd->{'dom'}) {
 	&$virtual_server::first_print($text{'modify_relay'});
-
-	if (defined(&virtual_server::obtain_lock_mail)) {
-		&virtual_server::obtain_lock_mail($d);
-		}
+	&obtain_lock_virtualmin_mailrelay($d);
 
 	# Modify for domain, using appropriate mail server
 	if ($virtual_server::config{'mail_system'} == 0) {
@@ -267,12 +262,9 @@ if ($d->{'dom'} ne $oldd->{'dom'}) {
 				$text{'modify_emailertable'});
 			}
 		}
+	&release_lock_virtualmin_mailrelay($d);
 
 	# XXX spam settings?
-
-	if (defined(&virtual_server::release_lock_mail)) {
-		&virtual_server::release_lock_mail($d);
-		}
 
 	# All done
 	return 1;
@@ -286,10 +278,7 @@ sub feature_delete
 {
 local ($d) = @_;
 &$virtual_server::first_print($text{'delete_relay'});
-
-if (defined(&virtual_server::obtain_lock_mail)) {
-	&virtual_server::obtain_lock_mail($d);
-	}
+&obtain_lock_virtualmin_mailrelay($d);
 
 # Delete for domain, using appropriate mail server
 if ($virtual_server::config{'mail_system'} == 0) {
@@ -324,10 +313,7 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 		&$virtual_server::second_print($text{'modify_emailertable'});
 		}
 	}
-
-if (defined(&virtual_server::release_lock_mail)) {
-	&virtual_server::release_lock_mail($d);
-	}
+&release_lock_virtualmin_mailrelay($d);
 
 # Remove MX records, if any 
 if ($d->{'dns'}) {
