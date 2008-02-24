@@ -3,6 +3,8 @@
 # XXX mailscanner support?
 # XXX add to repos
 # XXX quarantine management, per domain
+# XXX what happens to spam?
+# XXX announce on www.webmin.com, send to michael
 
 require 'virtualmin-mailrelay-lib.pl';
 $input_name = $module_name;
@@ -169,6 +171,9 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 	&sendmail::create_mailer($map, $mfile, $mdbm, $mtype);
 	}
 
+# Allow this system to relay
+&virtual_server::setup_secondary_mx($d->{'dom'});
+
 # Setup spam filter
 if (&can_domain_filter() && $tmpl->{$module_name."filter"} eq "yes") {
 	&save_domain_filter($d->{'dom'}, 1);
@@ -265,6 +270,10 @@ if ($d->{'dom'} ne $oldd->{'dom'}) {
 			}
 		}
 
+	# Fix up relaying
+	&virtual_server::setup_secondary_mx($d->{'dom'});
+	&virtual_server::delete_secondary_mx($oldd->{'dom'});
+
 	# Change domain name to filter
 	if (&can_domain_filter()) {
 		local $filter = &get_domain_filter($oldd->{'dom'});
@@ -320,6 +329,9 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 		&$virtual_server::second_print($text{'modify_emailertable'});
 		}
 	}
+
+# Turn off relaying
+&virtual_server::delete_secondary_mx($d->{'dom'});
 
 # Turn off spam
 if (&can_domain_filter()) {
