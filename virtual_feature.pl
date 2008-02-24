@@ -1,9 +1,5 @@
-# XXX docs
-#	XXX mimedefang setup (filter_recipient, -t flag, general install)
 # XXX mailscanner support?
 # XXX add to repos
-# XXX quarantine management, per domain
-# XXX what happens to spam?
 # XXX announce on www.webmin.com, send to michael
 
 require 'virtualmin-mailrelay-lib.pl';
