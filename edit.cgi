@@ -1,6 +1,5 @@
 #!/usr/local/bin/perl
 # Show a form for editing a mail relay domain's destination server
-# XXX and spam settings
 
 require 'virtualmin-mailrelay-lib.pl';
 &ReadParse();

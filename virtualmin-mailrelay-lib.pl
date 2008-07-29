@@ -79,10 +79,10 @@ if ($virtual_server::config{'mail_system'} == 0) {
 	local ($old) = grep { $_->{'name'} eq $dname } @$trans;
 	if ($old) {
 		if ($old->{'value'} =~ /^\S+:\[(\S+)\]$/) {
-			return $2;
+			return $1;
 			}
 		elsif ($old->{'value'} =~ /^\S+:(\S+)$/) {
-			return $2;
+			return $1;
 			}
 		else {
 			return $old->{'value'};
