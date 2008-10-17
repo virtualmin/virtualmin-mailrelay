@@ -1,6 +1,3 @@
-# XXX mailscanner support?
-# XXX add to repos
-# XXX announce on www.webmin.com, send to michael
 
 require 'virtualmin-mailrelay-lib.pl';
 $input_name = $module_name;
@@ -89,7 +86,8 @@ sub feature_depends
 local ($d) = @_;
 return $text{'feat_email'} if ($d->{'mail'});
 local $tmpl = &virtual_server::get_template($d->{'template'});
-local $mip = $tmpl->{$module_name."server"};
+local $mip = $d->{$module_name."server"} ||
+	     $tmpl->{$module_name."server"};
 return $mip eq '' || $mip eq 'none' ? $text{'feat_eserver'} : undef;
 }
 
@@ -139,7 +137,8 @@ sub feature_setup
 {
 local ($d) = @_;
 local $tmpl = &virtual_server::get_template($d->{'template'});
-local $server = $tmpl->{$module_name."server"};
+local $server = $d->{$module_name."server"} ||
+		$tmpl->{$module_name."server"};
 &$virtual_server::first_print($text{'setup_relay'});
 if (!$server) {
 	&$virtual_server::second_print($text{'setup_eserver'});
@@ -363,6 +362,64 @@ if ($d->{'dns'}) {
 # All done
 return 1;
 }
+
+# Always destination mail server inputs
+sub feature_inputs_show
+{
+return 1;
+}
+
+# feature_inputs([&domain])
+# Returns a field for destination mail server
+sub feature_inputs
+{
+local ($d) = @_;
+local $tmpl = &virtual_server::get_template($d ? $d->{'template'} : 0);
+return &ui_table_row($text{'feat_server'},
+	&ui_opt_textbox($input_name."_server",
+			$tmpl->{$module_name."server"}, 30,
+			$text{'feat_servertmpl'}));
+}
+
+# feature_inputs_parse(&domain, &in)
+# Update the domain object with a custom destination mail server
+sub feature_inputs_parse
+{
+local ($d, $in) = @_;
+if (defined($in->{$input_name."_server"}) &&
+    !$in->{$input_name."_server_def"}) {
+	gethostbyname($in->{$input_name."_server"}) ||
+		return $text{'tmpl_emaster'};
+	$d->{$module_name."server"} = $in->{$input_name."_server"};
+	}
+return undef;
+}
+
+# feature_args(&domain)
+# Return command-line arguments for domain registration
+sub feature_args
+{
+return ( { 'name' => $module_name."-server",
+	   'value' => 'mailserver',
+	   'opt' => 1,
+	   'desc' => 'Destination mail server for relaying' },
+       );
+}
+
+# feature_args_parse(&domain, &args)
+# Parse command-line arguments from feature_args
+sub feature_args_parse
+{
+local ($d, $args) = @_;
+if (defined($args->{$module_name."-server"})) {
+	gethostbyname($args->{$module_name."-server"}) ||
+		return "Invalid mail server for relaying";
+	$d->{$module_name."server"} = $args->{$module_name."-server"};
+	}
+return undef;
+}
+
+
 
 # feature_import(domain-name, user-name, db-name)
 # Returns 1 if this feature is already enabled for some domain being imported,

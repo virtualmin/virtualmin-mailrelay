@@ -12,6 +12,8 @@ feat_echecktrans=The Postfix configuration does not have any Transport Mapping t
 feat_echeckmap=The transport mapping source <tt>$1</tt> is not supported by Postfix - you may need to install Postfix libraries for it, or re-compile
 feat_echeckmapaccess=The transport mapping source <tt>$1</tt> cannot be used : $2
 feat_eserver=Mail relaying cannot be enabled until a default destination SMTP server has been specified in the server template (in the Plugin options section)
+feat_server=Destination SMTP relay server
+feat_servertmpl=From template
 
 tmpl_server=Default destination SMTP relay server
 tmpl_notset=Not set

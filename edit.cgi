@@ -15,7 +15,7 @@ $relay || &error($text{'edit_erelay'});
 
 print &ui_form_start("save.cgi");
 print &ui_hidden("dom", $in{'dom'});
-print &ui_table_start($text{'edit_header'}, undef, 2, [ "width=30%" ]);
+print &ui_table_start($text{'edit_header'}, undef, 2);
 
 # Relay destination
 print &ui_table_row($text{'edit_relay'},
