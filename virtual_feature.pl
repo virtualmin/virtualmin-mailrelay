@@ -123,11 +123,10 @@ return undef;
 # feature_suitable([&parentdom], [&aliasdom], [&subdom])
 # Returns 1 if some feature can be used with the specified alias,
 # parent and sub domains.
-# Doesn't make sense for alias domains.
 sub feature_suitable
 {
 local ($parentdom, $aliasdom, $subdom) = @_;
-return !$aliasdom;
+return 1;
 }
 
 # feature_setup(&domain)
