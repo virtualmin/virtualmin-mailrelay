@@ -1,2 +1,4 @@
 ---- Changes since 1.1 ----
 The destination mail server can now be specified on the domain creation form, instead of just in the server template.
+---- Changes since 1.3 ----
+Relaying can now be enabled for alias domains.
