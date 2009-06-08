@@ -58,7 +58,7 @@ defang_esendmail=The MIMEdefang mail filter can only be used with Sendmail
 defang_efeature=MIMEdefang does not appear to be enabled in the Sendmail configuration file $1
 defang_eprocess=The MIMEdefang process is not running on your system. Maybe it is not installed, or has not been started.
 defang_escript=The MIMEdefang configuration script $1 was not found. Maybe it is not install, or the <a href='$2'>module configuration</a> is incorrect.
-defang_efile=The MIMEdefang configuration script $1 does not appear to be setup to read the file $2 which specifies domaisn to filter mail for. Either fix it, or disable this feature on the <a href='$3'>module configuration</a> page.
+defang_efile=The MIMEdefang configuration script $1 does not appear to be setup to read the file $2 which specifies domain to filter mail for. Either fix it, or disable this feature on the <a href='$3'>module configuration</a> page.
 
 backup_conf=Saving mail relay settings ..
 restore_conf=Restoring mail relaying settings ..
