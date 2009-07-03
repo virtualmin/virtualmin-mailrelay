@@ -2,6 +2,6 @@ desc=Virtualmin Mail Relay
 category=servers
 depends=virtual-server/3.52 1.390
 hidden=1
-version=1.4
+version=1.5
 feedback=jcameron@webmin.com
 desc_nl=Virtualmin Mail Relais
