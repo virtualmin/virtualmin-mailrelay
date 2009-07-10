@@ -1,0 +1,5 @@
+desc=Set relay mail server at domain creation time
+html=When creating a virtual server with the mail relaying domain feature enabled, the destination mail server hostname can be set on the Create Virtual Server page.
+master=1
+reseller=1
+owner=1
