@@ -83,12 +83,15 @@ return &check_spam_filter();
 # Checks for a default master IP address in template.
 sub feature_depends
 {
-local ($d) = @_;
+local ($d, $oldd) = @_;
 return $text{'feat_email'} if ($d->{'mail'});
 local $tmpl = &virtual_server::get_template($d->{'template'});
 local $mip = $d->{$module_name."server"} ||
 	     $tmpl->{$module_name."server"};
-return $mip eq '' || $mip eq 'none' ? $text{'feat_eserver'} : undef;
+if (!$oldd || !$oldd->{$module_name}) {
+	return $mip eq '' || $mip eq 'none' ? $text{'feat_eserver'} : undef;
+	}
+return undef;
 }
 
 # feature_clash(&domain)
