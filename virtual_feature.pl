@@ -89,7 +89,7 @@ local $tmpl = &virtual_server::get_template($d->{'template'});
 local $mip = $d->{$module_name."server"} ||
 	     $tmpl->{$module_name."server"};
 if (!$oldd || !$oldd->{$module_name}) {
-	return $mip eq '' || $mip eq 'none' ? $text{'feat_eserver'} : undef;
+	return $text{'feat_eserver'} if ($mip eq '' || $mip eq 'none');
 	}
 return undef;
 }
