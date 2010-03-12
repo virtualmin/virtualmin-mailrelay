@@ -48,7 +48,7 @@ edit_date=Date sent
 edit_subject=Subject
 edit_queue=Mail Queue
 edit_size=Message size
-edit_noqueue=No email messages are queued for this destination yet.
+edit_noqueue=No email messages are currently queued for this destination.
 
 save_err=Failed to configure mail relaying
 save_enone=No destination SMTP server entered
