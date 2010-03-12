@@ -30,5 +30,23 @@ if (&can_domain_filter()) {
 print &ui_table_end();
 print &ui_form_end([ [ undef, $text{'save'} ] ]);
 
+# Show mail queue for this domain
+if (&supports_mail_queue() && $relay) {
+	print &ui_hr();
+	print &ui_subheading($text{'edit_queue'});
+
+	@queue = &list_mail_queue($d);
+	print &ui_columns_table(
+		[ $text{'edit_from'}, $text{'edit_to'},
+		  $text{'edit_date'}, $text{'edit_size'} ],
+		"100%",
+		[ map { [ $_->{'from'}, $_->{'to'},
+			  $_->{'date'}, &nice_size($_->{'size'}) ] } @queue ],
+		undef,
+		0,
+		undef,
+		$text{'edit_noqueue'});
+	}
+
 &ui_print_footer("/", $text{'index'});
 

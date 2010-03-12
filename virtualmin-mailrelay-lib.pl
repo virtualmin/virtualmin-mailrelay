@@ -238,5 +238,54 @@ if (defined(&virtual_server::release_lock_anything)) {
 	}
 }
 
+# supports_mail_queue()
+# Returns 1 if we can list the mail queue on this system
+sub supports_mail_queue
+{
+return $virtual_server::config{'mail_system'} == 0 ||
+       $virtual_server::config{'mail_system'} == 1;
+}
+
+# list_mail_queue(&domain)
+# Returns queued messages for some domain
+sub list_mail_queue
+{
+local ($d) = @_;
+local $re = "\@".$d->{'dom'};
+if ($virtual_server::config{'mail_system'} == 0) {
+	# Get from Postfix
+	&foreign_require("postfix");
+	local @qfiles = &postfix::list_queue();
+	local @rv;
+	foreach my $q (@qfiles) {
+		if ($q->{'to'} =~ /\Q$re\E/) {
+			$q->{'date'} ||= &make_date($q->{'time'});
+			push(@rv, $q);
+			}
+		}
+	return @rv;
+	}
+elsif ($virtual_server::config{'mail_system'} == 1) {
+	# Get from Sendmail
+	&foreign_require("sendmail");
+	local $conf = &sendmail::get_sendmailcf();
+	local @qfiles = &sendmail::list_mail_queue($conf);
+	local @queue = grep { $_->{'header'}->{'to'} =~ /\Q$re\E/ }
+			    map { &sendmail::mail_from_queue($_) } @qfiles;
+	local @rv;
+	foreach my $q (@queue) {
+		push(@rv, { 'from' => $q->{'header'}->{'from'},
+			    'to' => $q->{'header'}->{'to'},
+			    'subject' => $q->{'header'}->{'subject'},
+			    'date' => $q->{'header'}->{'date'},
+			    'size' => $q->{'size'} });
+		}
+	return @rv;
+	}
+else {
+	return ( );
+	}
+}
+
 1;
 

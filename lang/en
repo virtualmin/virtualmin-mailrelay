@@ -42,6 +42,13 @@ edit_relay=Destination SMTP server
 edit_edomain=Virtualmin domain not found!
 edit_return=relay form
 edit_filter=Filter spam and viruses when relaying?
+edit_from=From address
+edit_to=To address
+edit_date=Date sent
+edit_subject=Subject
+edit_queue=Mail Queue
+edit_size=Message size
+edit_noqueue=No email messages are queued for this destination yet.
 
 save_err=Failed to configure mail relaying
 save_enone=No destination SMTP server entered
