@@ -16,15 +16,15 @@ $relay || &error($text{'edit_erelay'});
 $in{'relay'} =~ /\S/ || &error($text{'save_enone'});
 gethostbyname($in{'relay'}) || &error($text{'save_erelay'});
 
-&ui_print_unbuffered_header(&virtual_server::domain_in($d),
-			    $text{'edit_title'}, "");
-
 # Run the before command
 &virtual_server::set_domain_envs($d, "MODIFY_DOMAIN", $d);
 $merr = &virtual_server::making_changes();
 &virtual_server::reset_domain_envs($d);
 &error(&virtual_server::text('save_emaking', "<tt>$merr</tt>"))
 	if (defined($merr));
+
+&ui_print_unbuffered_header(&virtual_server::domain_in($d),
+			    $text{'edit_title'}, "");
 
 # Update the mailertable
 &$virtual_server::first_print($text{'save_doing'});
