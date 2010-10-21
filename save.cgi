@@ -19,6 +19,13 @@ gethostbyname($in{'relay'}) || &error($text{'save_erelay'});
 &ui_print_unbuffered_header(&virtual_server::domain_in($d),
 			    $text{'edit_title'}, "");
 
+# Run the before command
+&virtual_server::set_domain_envs($d, "MODIFY_DOMAIN", $d);
+$merr = &virtual_server::making_changes();
+&virtual_server::reset_domain_envs($d);
+&error(&virtual_server::text('save_emaking', "<tt>$merr</tt>"))
+	if (defined($merr));
+
 # Update the mailertable
 &$virtual_server::first_print($text{'save_doing'});
 &save_relay_destination($in{'dom'}, $in{'relay'});
@@ -41,6 +48,14 @@ if (&can_domain_filter() && defined($in{'filter'})) {
 			$virtual_server::text{'setup_done'});
 		}
 	}
+
+# Run the after command
+&virtual_server::set_domain_envs($d, "MODIFY_DOMAIN", undef, $d);
+$merr = &virtual_server::made_changes();
+&$virtual_server::second_print(
+	&virtual_server::text('setup_emade', "<tt>$merr</tt>"))
+	if (defined($merr));
+&virtual_server::reset_domain_envs($d);
 
 &webmin_log("save", undef, $in{'dom'});
 &ui_print_footer("edit.cgi?dom=$in{'dom'}", $text{'edit_return'});
