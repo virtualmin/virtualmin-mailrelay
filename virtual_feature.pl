@@ -390,7 +390,7 @@ sub feature_inputs_parse
 local ($d, $in) = @_;
 if (defined($in->{$input_name."_server"}) &&
     !$in->{$input_name."_server_def"}) {
-	gethostbyname($in->{$input_name."_server"}) ||
+	&to_ipaddress($in->{$input_name."_server"}) ||
 		return $text{'tmpl_emaster'};
 	$d->{$module_name."server"} = $in->{$input_name."_server"};
 	}
@@ -414,7 +414,7 @@ sub feature_args_parse
 {
 local ($d, $args) = @_;
 if (defined($args->{$module_name."-server"})) {
-	gethostbyname($args->{$module_name."-server"}) ||
+	&to_ipaddress($args->{$module_name."-server"}) ||
 		return "Invalid mail server for relaying";
 	$d->{$module_name."server"} = $args->{$module_name."-server"};
 	}
@@ -572,7 +572,7 @@ elsif ($in->{$input_name.'_mode'} == 1) {
         $tmpl->{$module_name."server"} = "none";
         }
 else {
-	gethostbyname($in->{$input_name}) ||
+	&to_ipaddress($in->{$input_name}) ||
 		&error($text{'tmpl_emaster'});
         $tmpl->{$module_name."server"} = $in->{$input_name};
         }
