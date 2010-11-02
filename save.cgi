@@ -14,7 +14,9 @@ $relay || &error($text{'edit_erelay'});
 
 # Validate inputs
 $in{'relay'} =~ /\S/ || &error($text{'save_enone'});
-gethostbyname($in{'relay'}) || &error($text{'save_erelay'});
+&to_ipaddress($in{'relay'}) ||
+    defined(&to_ip6address) && &to_ip6address($in{'relay'}) ||
+	&error($text{'save_erelay'});
 
 # Run the before command
 &virtual_server::set_domain_envs($d, "MODIFY_DOMAIN", $d);
