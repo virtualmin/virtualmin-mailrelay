@@ -69,3 +69,4 @@ defang_efile=The MIMEdefang configuration script $1 does not appear to be setup 
 
 backup_conf=Saving mail relay settings ..
 restore_conf=Restoring mail relaying settings ..
+__norefs=1
