@@ -16,6 +16,8 @@ $relay || &error($text{'edit_erelay'});
 $in{'relay'} =~ /\S/ || &error($text{'save_enone'});
 &to_ipaddress($in{'relay'}) ||
     defined(&to_ip6address) && &to_ip6address($in{'relay'}) ||
+    ($in{'relay'} =~ /^(\S+):\d+$/ && &can_relay_port() &&
+     (&to_ipaddress("$1") || &to_ip6address("$1"))) ||
 	&error($text{'save_erelay'});
 
 # Run the before command

@@ -25,6 +25,14 @@ return $config{'scanner'} == 1 &&
        $config{'domains_file'};
 }
 
+# can_relay_port()
+# Returns 1 if the destination can be in host:port format. Only true for
+# Postfix currently.
+sub can_relay_port
+{
+return $virtual_server::config{'mail_system'} == 0 ? 1 : 0;
+}
+
 # check_spam_filter()
 # Checks if the configured spam filter is installed, and returns an error
 # message if not.
@@ -118,7 +126,7 @@ local ($dname, $server) = @_;
 &virtual_server::require_mail();
 &obtain_lock_virtualmin_mailrelay();
 if ($virtual_server::config{'mail_system'} == 0) {
-	# Update SMTP transport
+	# Update Postfix SMTP transport
 	local $trans = &postfix::get_maps("transport_maps");
 	local ($old) = grep { $_->{'name'} eq $dname } @$trans;
 	if ($old) {
@@ -126,7 +134,7 @@ if ($virtual_server::config{'mail_system'} == 0) {
 		if ($old->{'value'} =~ /^(\S+):\[(\S+)\]$/) {
 			$nw->{'value'} = "$1:[$server]";
 			}
-		elsif ($old->{'value'} =~ /^(\S+):(\S+)$/) {
+		elsif ($old->{'value'} =~ /^(\S+):([^0-9 ]+)$/) {
 			$nw->{'value'} = "$1:$server";
 			}
 		else {
@@ -138,7 +146,7 @@ if ($virtual_server::config{'mail_system'} == 0) {
 	return undef;
 	}
 elsif ($virtual_server::config{'mail_system'} == 1) {
-	# Get mailertable entry
+	# Get Sendmail mailertable entry
 	&foreign_require("sendmail", "mailers-lib.pl");
 	local $conf = &sendmail::get_sendmailcf();
 	local $mfile = &sendmail::mailers_file($conf);
