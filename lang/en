@@ -1,6 +1,7 @@
 feat_name=Mail Relay
 feat_losing=The system will no longer relay or filter mail for the domain
 feat_label=Relay mail for domain?
+feat_label2=Relay mail
 feat_echeck=This plugin requires that Virtualmin be configured to use either the Postfix or Sendmail mail server
 feat_emaster=Mail relaying cannot be enabled until a default destination SMTP server has been specified in the server template (in the <b>Plugin options</b> section)
 feat_email=Local mail delivery and relaying cannot both be enabled for the same domain
