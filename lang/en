@@ -15,6 +15,7 @@ feat_echeckmapaccess=The transport mapping source <tt>$1</tt> cannot be used : $
 feat_eserver=Mail relaying cannot be enabled until a default destination SMTP server has been specified in the server template (in the Plugin options section)
 feat_server=Destination SMTP relay server
 feat_servertmpl=From template
+feat_module=Virtualmin Mail Relay (for configuring destinations)
 
 tmpl_server=Default destination SMTP relay server
 tmpl_notset=Not set
