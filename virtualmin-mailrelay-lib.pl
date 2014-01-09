@@ -89,6 +89,9 @@ if ($virtual_server::config{'mail_system'} == 0) {
 		if ($old->{'value'} =~ /^\S+:\[(\S+)\]$/) {
 			return $1;
 			}
+		elsif ($old->{'value'} =~ /^\S+:\[(\S+)\]:(\d+)$/) {
+			return $1.":".$2;
+			}
 		elsif ($old->{'value'} =~ /^\S+:(\S+)$/) {
 			return $1;
 			}
@@ -132,7 +135,13 @@ if ($virtual_server::config{'mail_system'} == 0) {
 	if ($old) {
 		local $nw = { %$old };
 		if ($old->{'value'} =~ /^(\S+):\[(\S+)\]$/) {
-			$nw->{'value'} = "$1:[$server]";
+			my $lhs = $1;
+			if ($server =~ /^(.*):(\d+)$/) {
+				$nw->{'value'} = "$lhs:[$1]:$2";
+				}
+			else {
+				$nw->{'value'} = "$lhs:[$server]";
+				}
 			}
 		elsif ($old->{'value'} =~ /^(\S+):([^0-9 ]+)$/) {
 			$nw->{'value'} = "$1:$server";
