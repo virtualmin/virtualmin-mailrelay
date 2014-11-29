@@ -95,13 +95,14 @@ if (!$oldd || !$oldd->{$module_name}) {
 return undef;
 }
 
-# feature_clash(&domain)
+# feature_clash(&domain, [field])
 # Returns undef if there is no clash for this domain for this feature, or
 # an error message if so.
 # Checks for a mailertable entry on Sendmail
 sub feature_clash
 {
-local ($d) = @_;
+local ($d, $field) = @_;
+return undef if ($field && $field ne "dom");
 &virtual_server::require_mail();
 if ($virtual_server::config{'mail_system'} == 0) {
 	# Check for transport entry
