@@ -482,7 +482,8 @@ $binfo{'dest'} = &get_relay_destination($d->{'dom'});
 if (&can_domain_filter()) {
 	$binfo{'filter'} = &get_domain_filter($d->{'dom'});
 	}
-&write_file($file, \%binfo);
+&virtual_server::write_as_domain_user($d,
+	sub { &write_file($file, \%binfo) });
 &$virtual_server::second_print($virtual_server::text{'setup_done'});
 return 1;
 }
