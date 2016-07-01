@@ -511,7 +511,7 @@ if ($binfo{'filter'} ne '' && &can_domain_filter()) {
 	}
 &release_lock_virtualmin_mailrelay($d);
 &$virtual_server::second_print($virtual_server::text{'setup_done'});
-return $rv;
+return 1;
 }
 
 # feature_backup_name()
