@@ -348,11 +348,11 @@ if ($d->{'dns'}) {
 	my $file = &bind8::find("file", $z->{'members'});
 	my $fn = $file->{'values'}->[0];
 	my $zonefile = &bind8::make_chroot($fn);
-	my @recs = &bind8::read_zone_file($fn, $newzonename);
+	my @recs = &bind8::read_zone_file($fn, $d->{'dom'});
 	my @mx = grep { $_->{'type'} eq 'MX' &&
-			   $_->{'name'} eq $_[0]->{'dom'}."." ||
+			   $_->{'name'} eq $d->{'dom'}."." ||
 			   $_->{'type'} eq 'A' &&
-			   $_->{'name'} eq "mail.".$_[0]->{'dom'}."." } @recs;
+			   $_->{'name'} eq "mail.".$d->{'dom'}."." } @recs;
 	if (@mx) {
 		&$virtual_server::first_print(
 			$virtual_server::text{'save_dns5'});
