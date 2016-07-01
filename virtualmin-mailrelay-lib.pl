@@ -1,14 +1,18 @@
 # Common functions needed for forwarded mail filtering
+use strict;
+use warnings;
+our (%text, %config);
+our $module_name;
 
 BEGIN { push(@INC, ".."); };
 eval "use WebminCore;";
 &init_config();
 &foreign_require('virtual-server', 'virtual-server-lib.pl');
-%access = &get_module_acl();
+our %access = &get_module_acl();
 
 sub can_edit_relay
 {
-local ($dname) = @_;
+my ($dname) = @_;
 if ($access{'dom'} eq '*') {
 	return 1;
 	}
@@ -45,21 +49,21 @@ if ($config{'scanner'} == 1) {
 	$virtual_server::config{'mail_system'} == 1 ||
 		return $text{'defang_esendmail'};
 	&foreign_require("sendmail", "features-lib.pl");
-	local @feats = &sendmail::list_features();
+	my @feats = &sendmail::list_features();
 	if (@feats) {
-		local ($mdf) = grep {
+		my ($mdf) = grep {
 		    $_->{'text'} =~ /INPUT_MAIL_FILTER.*mimedefang/ } @feats;
 		$mdf || return &text('defang_efeature',
 				     "<tt>$config{'sendmail_mc'}</tt>");
 		}
-	local @pids = &find_byname("mimedefang.pl");
+	my @pids = &find_byname("mimedefang.pl");
 	@pids || return $text{'defang_eprocess'};
 	-r $config{'mimedefang_script'} || return &text('defang_escript',
 		"<tt>$config{'mimedefang_script'}</tt>",
 		"../config.cgi?$module_name");
 	if ($config{'domains_file'}) {
-		local $lref = &read_file_lines($config{'mimedefang_script'}, 1);
-		local $found = 0;
+		my $lref = &read_file_lines($config{'mimedefang_script'}, 1);
+		my $found = 0;
 		foreach my $l (@$lref) {
 			$found++ if ($l =~ /\Q$config{'domains_file'}\E/);
 			}
@@ -79,12 +83,12 @@ else {
 # Returns the SMTP server to relay email to for some domain
 sub get_relay_destination
 {
-local ($dname) = @_;
+my ($dname) = @_;
 &virtual_server::require_mail();
 if ($virtual_server::config{'mail_system'} == 0) {
 	# From SMTP transport
-	local $trans = &postfix::get_maps("transport_maps");
-	local ($old) = grep { $_->{'name'} eq $dname } @$trans;
+	my $trans = &postfix::get_maps("transport_maps");
+	my ($old) = grep { $_->{'name'} eq $dname } @$trans;
 	if ($old) {
 		if ($old->{'value'} =~ /^\S+:\[(\S+)\]$/) {
 			return $1;
@@ -104,11 +108,11 @@ if ($virtual_server::config{'mail_system'} == 0) {
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Get mailertable entry
 	&foreign_require("sendmail", "mailers-lib.pl");
-	local $conf = &sendmail::get_sendmailcf();
-	local $mfile = &sendmail::mailers_file($conf);
-	local ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
-	local @mailers = &sendmail::list_mailers($mfile);
-	local ($old) = grep { $_->{'domain'} eq $dname } @mailers;
+	my $conf = &sendmail::get_sendmailcf();
+	my $mfile = &sendmail::mailers_file($conf);
+	my ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
+	my @mailers = &sendmail::list_mailers($mfile);
+	my ($old) = grep { $_->{'domain'} eq $dname } @mailers;
 	if ($old) {
 		if ($old->{'dest'} =~ /^\[(\S+)\]$/) {
 			return $1;
@@ -125,15 +129,15 @@ return undef;	# Not found??
 # Updates the SMTP server to relay email to for some domain
 sub save_relay_destination
 {
-local ($dname, $server) = @_;
+my ($dname, $server) = @_;
 &virtual_server::require_mail();
 &obtain_lock_virtualmin_mailrelay();
 if ($virtual_server::config{'mail_system'} == 0) {
 	# Update Postfix SMTP transport
-	local $trans = &postfix::get_maps("transport_maps");
-	local ($old) = grep { $_->{'name'} eq $dname } @$trans;
+	my $trans = &postfix::get_maps("transport_maps");
+	my ($old) = grep { $_->{'name'} eq $dname } @$trans;
 	if ($old) {
-		local $nw = { %$old };
+		my $nw = { %$old };
 		if ($old->{'value'} =~ /^(\S+):\[(\S+)\]$/) {
 			my $lhs = $1;
 			if ($server =~ /^(.*):(\d+)$/) {
@@ -157,13 +161,13 @@ if ($virtual_server::config{'mail_system'} == 0) {
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Get Sendmail mailertable entry
 	&foreign_require("sendmail", "mailers-lib.pl");
-	local $conf = &sendmail::get_sendmailcf();
-	local $mfile = &sendmail::mailers_file($conf);
-	local ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
-	local @mailers = &sendmail::list_mailers($mfile);
-	local ($old) = grep { $_->{'domain'} eq $dname } @mailers;
+	my $conf = &sendmail::get_sendmailcf();
+	my $mfile = &sendmail::mailers_file($conf);
+	my ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
+	my @mailers = &sendmail::list_mailers($mfile);
+	my ($old) = grep { $_->{'domain'} eq $dname } @mailers;
 	if ($old) {
-		local $nw = { %$old };
+		my $nw = { %$old };
 		if ($old->{'dest'} =~ /^\[(\S+)\]$/) {
 			$nw->{'dest'} = "[$server]";
 			}
@@ -181,8 +185,8 @@ elsif ($virtual_server::config{'mail_system'} == 1) {
 # Return 1 if relay filtering is enabled for a domain
 sub get_domain_filter
 {
-local ($dname) = @_;
-local $lref = &read_file_lines($config{'domains_file'}, 1);
+my ($dname) = @_;
+my $lref = &read_file_lines($config{'domains_file'}, 1);
 return &indexoflc($dname, @$lref) >= 0 ? 1 : 0;
 }
 
@@ -190,9 +194,9 @@ return &indexoflc($dname, @$lref) >= 0 ? 1 : 0;
 # Turns on or off  relay filtering for a domain
 sub save_domain_filter
 {
-local ($dname, $filter) = @_;
-local $lref = &read_file_lines($config{'domains_file'});
-local $idx = &indexoflc($dname, @$lref);
+my ($dname, $filter) = @_;
+my $lref = &read_file_lines($config{'domains_file'});
+my $idx = &indexoflc($dname, @$lref);
 if ($idx >= 0 && !$filter) {
 	# Remove from file
 	splice(@$lref, $idx, 1);
@@ -216,14 +220,14 @@ if ($mail::got_lock_virtualmin_mailrelay == 0) {
 	@main::got_lock_virtualmin_mailrelay_files = ( );
 	if ($virtual_server::config{'mail_system'} == 0) {
 		# Lock transport file
-		local @tv = &postfix::get_maps_types_files("transport_maps");
+		my @tv = &postfix::get_maps_types_files("transport_maps");
 		push(@main::got_lock_virtualmin_mailrelay_files,
 		     map { $_->[1] } @tv);
 		}
 	elsif ($virtual_server::config{'mail_system'} == 1) {
 		# Lock mailertable file
 		&foreign_require("sendmail", "mailers-lib.pl");
-		local $mfile = &sendmail::mailers_file(
+		my $mfile = &sendmail::mailers_file(
 				&sendmail::get_sendmailcf());
 		push(@main::got_lock_virtualmin_mailrelay_files, $mfile);
 		}
@@ -267,13 +271,13 @@ return $virtual_server::config{'mail_system'} == 0 ||
 # Returns queued messages for some domain
 sub list_mail_queue
 {
-local ($d) = @_;
-local $re = "\@".$d->{'dom'};
+my ($d) = @_;
+my $re = "\@".$d->{'dom'};
 if ($virtual_server::config{'mail_system'} == 0) {
 	# Get from Postfix
 	&foreign_require("postfix");
-	local @qfiles = &postfix::list_queue();
-	local @rv;
+	my @qfiles = &postfix::list_queue();
+	my @rv;
 	foreach my $q (@qfiles) {
 		if ($q->{'to'} =~ /\Q$re\E/) {
 			$q->{'date'} ||= &make_date($q->{'time'});
@@ -285,11 +289,11 @@ if ($virtual_server::config{'mail_system'} == 0) {
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Get from Sendmail
 	&foreign_require("sendmail");
-	local $conf = &sendmail::get_sendmailcf();
-	local @qfiles = &sendmail::list_mail_queue($conf);
-	local @queue = grep { $_->{'header'}->{'to'} =~ /\Q$re\E/ }
+	my $conf = &sendmail::get_sendmailcf();
+	my @qfiles = &sendmail::list_mail_queue($conf);
+	my @queue = grep { $_->{'header'}->{'to'} =~ /\Q$re\E/ }
 			    map { &sendmail::mail_from_queue($_) } @qfiles;
-	local @rv;
+	my @rv;
 	foreach my $q (@queue) {
 		push(@rv, { 'from' => $q->{'header'}->{'from'},
 			    'to' => $q->{'header'}->{'to'},
@@ -305,4 +309,3 @@ else {
 }
 
 1;
-

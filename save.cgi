@@ -1,5 +1,8 @@
 #!/usr/local/bin/perl
 # Update master server IPs
+use strict;
+use warnings;
+our (%text, %in);
 
 require 'virtualmin-mailrelay-lib.pl';
 &ReadParse();
@@ -7,9 +10,9 @@ require 'virtualmin-mailrelay-lib.pl';
 
 # Get and check the domain
 &can_edit_relay($in{'dom'}) || &error($text{'edit_ecannot'});
-$d = &virtual_server::get_domain_by("dom", $in{'dom'});
+my $d = &virtual_server::get_domain_by("dom", $in{'dom'});
 $d || &error($text{'edit_edomain'});
-$relay = &get_relay_destination($in{'dom'});
+my $relay = &get_relay_destination($in{'dom'});
 $relay || &error($text{'edit_erelay'});
 
 # Validate inputs
@@ -22,7 +25,7 @@ $in{'relay'} =~ /\S/ || &error($text{'save_enone'});
 
 # Run the before command
 &virtual_server::set_domain_envs($d, "MODIFY_DOMAIN", $d);
-$merr = &virtual_server::making_changes();
+my $merr = &virtual_server::making_changes();
 &virtual_server::reset_domain_envs($d);
 &error(&virtual_server::text('save_emaking', "<tt>$merr</tt>"))
 	if (defined($merr));
@@ -36,7 +39,7 @@ $merr = &virtual_server::making_changes();
 &$virtual_server::second_print($virtual_server::text{'setup_done'});
 
 if (&can_domain_filter() && defined($in{'filter'})) {
-	$old = &get_domain_filter($d->{'dom'});
+	my $old = &get_domain_filter($d->{'dom'});
 	if ($in{'filter'} && !$old) {
 		# Turn on spam filter
 		&$virtual_server::first_print($text{'save_spamon'});
@@ -63,4 +66,3 @@ $merr = &virtual_server::made_changes();
 
 &webmin_log("save", undef, $in{'dom'});
 &ui_print_footer("edit.cgi?dom=$in{'dom'}", $text{'edit_return'});
-

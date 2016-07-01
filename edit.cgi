@@ -1,14 +1,17 @@
 #!/usr/local/bin/perl
 # Show a form for editing a mail relay domain's destination server
+use strict;
+use warnings;
+our (%text, %in);
 
 require 'virtualmin-mailrelay-lib.pl';
 &ReadParse();
 
 # Get and check the domain
 &can_edit_relay($in{'dom'}) || &error($text{'edit_ecannot'});
-$d = &virtual_server::get_domain_by("dom", $in{'dom'});
+my $d = &virtual_server::get_domain_by("dom", $in{'dom'});
 $d || &error($text{'edit_edomain'});
-$relay = &get_relay_destination($in{'dom'});
+my $relay = &get_relay_destination($in{'dom'});
 $relay || &error($text{'edit_erelay'});
 
 &ui_print_header(&virtual_server::domain_in($d), $text{'edit_title'}, "");
@@ -35,7 +38,7 @@ if (&supports_mail_queue() && $relay) {
 	print &ui_hr();
 	print &ui_subheading($text{'edit_queue'});
 
-	@queue = &list_mail_queue($d);
+	my @queue = &list_mail_queue($d);
 	print &ui_columns_table(
 		[ $text{'edit_from'}, $text{'edit_to'},
 		  $text{'edit_date'}, $text{'edit_size'} ],
@@ -49,4 +52,3 @@ if (&supports_mail_queue() && $relay) {
 	}
 
 &ui_print_footer("/", $text{'index'});
-

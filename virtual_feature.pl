@@ -1,6 +1,10 @@
+use strict;
+use warnings;
+our (%text);
+our $module_name;
 
 require 'virtualmin-mailrelay-lib.pl';
-$input_name = $module_name;
+my $input_name = $module_name;
 $input_name =~ s/[^A-Za-z0-9]/_/g;
 
 # feature_name()
@@ -22,7 +26,7 @@ return $text{'feat_losing'};
 # editing form
 sub feature_label
 {
-local ($edit) = @_;
+my ($edit) = @_;
 return $edit ? $text{'feat_label2'} : $text{'feat_label'};
 }
 
@@ -44,16 +48,16 @@ if (!$virtual_server::config{'mail'}) {
 &virtual_server::require_mail();
 if ($virtual_server::config{'mail_system'} == 0) {
 	# Check for Postfix transport map
-	local $trans = &postfix::get_real_value("transport_maps");
+	my $trans = &postfix::get_real_value("transport_maps");
 	$trans || return $text{'feat_echecktrans'};
 	if (defined(&postfix::can_access_map)) {
-		local @tv = &postfix::get_maps_types_files("transport_maps");
+		my @tv = &postfix::get_maps_types_files("transport_maps");
 		foreach my $tv (@tv) {
 			if (!&postfix::supports_map_type($tv->[0])) {
 				return &text('feat_echeckmap',
 					     "$tv->[0]:$tv->[1]");
 				}
-			local $err = &postfix::can_access_map(@$tv);
+			my $err = &postfix::can_access_map(@$tv);
 			if ($err) {
 				return &text('feat_echeckmapaccess',
 					     "$tv->[0]:$tv->[1]", $err);
@@ -64,7 +68,7 @@ if ($virtual_server::config{'mail_system'} == 0) {
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Check for Sendmail mailertable
 	&foreign_require("sendmail", "mailers-lib.pl");
-	local ($mdbm, $mtype) = &sendmail::mailers_dbm(
+	my ($mdbm, $mtype) = &sendmail::mailers_dbm(
 					&sendmail::get_sendmailcf());
 	if (!$mdbm) {
 		return $text{'feat_echeckmailertable'};
@@ -84,10 +88,10 @@ return &check_spam_filter();
 # Checks for a default master IP address in template.
 sub feature_depends
 {
-local ($d, $oldd) = @_;
+my ($d, $oldd) = @_;
 return $text{'feat_email'} if ($d->{'mail'});
-local $tmpl = &virtual_server::get_template($d->{'template'});
-local $mip = $d->{$module_name."server"} ||
+my $tmpl = &virtual_server::get_template($d->{'template'});
+my $mip = $d->{$module_name."server"} ||
 	     $tmpl->{$module_name."server"};
 if (!$oldd || !$oldd->{$module_name}) {
 	return $text{'feat_eserver'} if ($mip eq '' || $mip eq 'none');
@@ -101,13 +105,13 @@ return undef;
 # Checks for a mailertable entry on Sendmail
 sub feature_clash
 {
-local ($d, $field) = @_;
+my ($d, $field) = @_;
 return undef if ($field && $field ne "dom");
 &virtual_server::require_mail();
 if ($virtual_server::config{'mail_system'} == 0) {
 	# Check for transport entry
-	local $trans = &postfix::get_maps("transport_maps");
-	local ($clash) = grep { $_->{'name'} eq $_[0]->{'dom'} } @$trans;
+	my $trans = &postfix::get_maps("transport_maps");
+	my ($clash) = grep { $_->{'name'} eq $_[0]->{'dom'} } @$trans;
 	if ($clash) {
 		return $text{'feat_eclashtrans'};
 		}
@@ -115,9 +119,9 @@ if ($virtual_server::config{'mail_system'} == 0) {
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Check for mailertable entry
 	&foreign_require("sendmail", "mailers-lib.pl");
-	local $mfile = &sendmail::mailers_file(&sendmail::get_sendmailcf());
-	local @mailers = &sendmail::list_mailers($mfile);
-	local ($clash) = grep { $_->{'domain'} eq $_[0]->{'dom'} } @mailers;
+	my $mfile = &sendmail::mailers_file(&sendmail::get_sendmailcf());
+	my @mailers = &sendmail::list_mailers($mfile);
+	my ($clash) = grep { $_->{'domain'} eq $_[0]->{'dom'} } @mailers;
 	if ($clash) {
 		return $text{'feat_eclashmailertable'};
 		}
@@ -130,7 +134,7 @@ return undef;
 # parent and sub domains.
 sub feature_suitable
 {
-local ($parentdom, $aliasdom, $subdom) = @_;
+my ($parentdom, $aliasdom, $subdom) = @_;
 return 1;
 }
 
@@ -139,9 +143,9 @@ return 1;
 # Adds a mailertable or transport entry
 sub feature_setup
 {
-local ($d) = @_;
-local $tmpl = &virtual_server::get_template($d->{'template'});
-local $server = $d->{$module_name."server"} ||
+my ($d) = @_;
+my $tmpl = &virtual_server::get_template($d->{'template'});
+my $server = $d->{$module_name."server"} ||
 		$tmpl->{$module_name."server"};
 &$virtual_server::first_print($text{'setup_relay'});
 if (!$server) {
@@ -153,20 +157,20 @@ if (!$server) {
 # Add relay for domain, using appropriate mail server
 if ($virtual_server::config{'mail_system'} == 0) {
 	# Add SMTP transport
-	local $map = { 'name' => $d->{'dom'},
+	my $map = { 'name' => $d->{'dom'},
 		       'value' => "smtp:[$server]" };
 	&postfix::create_mapping("transport_maps", $map);
 	&postfix::regenerate_any_table("transport_maps");
 	}
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Add mailertable entry
-	local $map = { 'domain' => $d->{'dom'},
+	my $map = { 'domain' => $d->{'dom'},
 		       'mailer' => 'smtp',
 		       'dest' => "[$server]" };
 	&foreign_require("sendmail", "mailers-lib.pl");
-	local $conf = &sendmail::get_sendmailcf();
-	local ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
-	local $mfile = &sendmail::mailers_file($conf);
+	my $conf = &sendmail::get_sendmailcf();
+	my ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
+	my $mfile = &sendmail::mailers_file($conf);
 	&sendmail::create_mailer($map, $mfile, $mdbm, $mtype);
 	}
 
@@ -188,19 +192,19 @@ if ($d->{'dns'}) {
 		&virtual_server::obtain_lock_dns($d, 1);
 		}
 
-	local $z = &virtual_server::get_bind_zone($d->{'dom'});
-	local $file = &bind8::find("file", $z->{'members'});
-	local $fn = $file->{'values'}->[0];
-	local $zonefile = &bind8::make_chroot($fn);
-	local @recs = &bind8::read_zone_file($fn, $d->{'dom'});
-	local ($mx) = grep { $_->{'type'} eq 'MX' &&
+	my $z = &virtual_server::get_bind_zone($d->{'dom'});
+	my $file = &bind8::find("file", $z->{'members'});
+	my $fn = $file->{'values'}->[0];
+	my $zonefile = &bind8::make_chroot($fn);
+	my @recs = &bind8::read_zone_file($fn, $d->{'dom'});
+	my ($mx) = grep { $_->{'type'} eq 'MX' &&
 			     $_->{'name'} eq $d->{'dom'}."." ||
 			     $_->{'type'} eq 'A' &&
 			     $_->{'name'} eq "mail.".$d->{'dom'}."." } @recs;
 	if (!$mx) {
 		&$virtual_server::first_print(
 			$virtual_server::text{'save_dns4'});
-		local $ip = $d->{'dns_ip'} || $d->{'ip'};
+		my $ip = $d->{'dns_ip'} || $d->{'ip'};
 		&virtual_server::create_mx_records($fn, $d, $ip);
 		&bind8::bump_soa_record($fn, \@recs);
 		&$virtual_server::second_print(
@@ -223,7 +227,7 @@ return 1;
 # Renames the mailertable or transport entry
 sub feature_modify
 {
-local ($d, $oldd) = @_;
+my ($d, $oldd) = @_;
 if ($d->{'dom'} ne $oldd->{'dom'}) {
 	&$virtual_server::first_print($text{'modify_relay'});
 	&obtain_lock_virtualmin_mailrelay($d);
@@ -231,10 +235,10 @@ if ($d->{'dom'} ne $oldd->{'dom'}) {
 	# Modify for domain, using appropriate mail server
 	if ($virtual_server::config{'mail_system'} == 0) {
 		# Change SMTP transport
-		local $trans = &postfix::get_maps("transport_maps");
-		local ($old) = grep { $_->{'name'} eq $oldd->{'dom'} } @$trans;
+		my $trans = &postfix::get_maps("transport_maps");
+		my ($old) = grep { $_->{'name'} eq $oldd->{'dom'} } @$trans;
 		if ($old) {
-			local $nw = { %$old };
+			my $nw = { %$old };
 			$nw->{'name'} = $d->{'dom'};
 			&postfix::modify_mapping("transport_maps", $old, $nw);
 			&postfix::regenerate_any_table("transport_maps");
@@ -249,14 +253,14 @@ if ($d->{'dom'} ne $oldd->{'dom'}) {
 	elsif ($virtual_server::config{'mail_system'} == 1) {
 		# Change mailertable entry
 		&foreign_require("sendmail", "mailers-lib.pl");
-		local $conf = &sendmail::get_sendmailcf();
-		local $mfile = &sendmail::mailers_file($conf);
-		local ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
-		local @mailers = &sendmail::list_mailers($mfile);
-		local ($old) = grep { $_->{'domain'} eq $oldd->{'dom'} }
+		my $conf = &sendmail::get_sendmailcf();
+		my $mfile = &sendmail::mailers_file($conf);
+		my ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
+		my @mailers = &sendmail::list_mailers($mfile);
+		my ($old) = grep { $_->{'domain'} eq $oldd->{'dom'} }
 				    @mailers;
 		if ($old) {
-			local $nw = { %$old };
+			my $nw = { %$old };
 			$nw->{'domain'} = $d->{'dom'};
 			&sendmail::modify_mailer($old, $nw, $mfile,
 						 $mdbm, $mtype);
@@ -275,7 +279,7 @@ if ($d->{'dom'} ne $oldd->{'dom'}) {
 
 	# Change domain name to filter
 	if (&can_domain_filter()) {
-		local $filter = &get_domain_filter($oldd->{'dom'});
+		my $filter = &get_domain_filter($oldd->{'dom'});
 		&save_domain_filter($oldd->{'dom'}, 0);
 		&save_domain_filter($d->{'dom'}, $filter);
 		}
@@ -291,15 +295,15 @@ return 1;
 # Called when this feature is disabled, or when the domain is being deleted
 sub feature_delete
 {
-local ($d) = @_;
+my ($d) = @_;
 &$virtual_server::first_print($text{'delete_relay'});
 &obtain_lock_virtualmin_mailrelay($d);
 
 # Delete for domain, using appropriate mail server
 if ($virtual_server::config{'mail_system'} == 0) {
 	# Delete SMTP transport
-	local $trans = &postfix::get_maps("transport_maps");
-	local ($old) = grep { $_->{'name'} eq $d->{'dom'} } @$trans;
+	my $trans = &postfix::get_maps("transport_maps");
+	my ($old) = grep { $_->{'name'} eq $d->{'dom'} } @$trans;
 	if ($old) {
 		&postfix::delete_mapping("transport_maps", $old);
 		&postfix::regenerate_any_table("transport_maps");
@@ -313,11 +317,11 @@ if ($virtual_server::config{'mail_system'} == 0) {
 elsif ($virtual_server::config{'mail_system'} == 1) {
 	# Change mailertable entry
 	&foreign_require("sendmail", "mailers-lib.pl");
-	local $conf = &sendmail::get_sendmailcf();
-	local $mfile = &sendmail::mailers_file($conf);
-	local ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
-	local @mailers = &sendmail::list_mailers($mfile);
-	local ($old) = grep { $_->{'domain'} eq $d->{'dom'} }
+	my $conf = &sendmail::get_sendmailcf();
+	my $mfile = &sendmail::mailers_file($conf);
+	my ($mdbm, $mtype) = &sendmail::mailers_dbm($conf);
+	my @mailers = &sendmail::list_mailers($mfile);
+	my ($old) = grep { $_->{'domain'} eq $d->{'dom'} }
 			    @mailers;
 	if ($old) {
 		&sendmail::delete_mailer($old, $mfile, $mdbm, $mtype);
@@ -338,14 +342,14 @@ if (&can_domain_filter()) {
 	}
 &release_lock_virtualmin_mailrelay($d);
 
-# Remove MX records, if any 
+# Remove MX records, if any
 if ($d->{'dns'}) {
-	local $z = &virtual_server::get_bind_zone($d->{'dom'});
-	local $file = &bind8::find("file", $z->{'members'});
-	local $fn = $file->{'values'}->[0];
-	local $zonefile = &bind8::make_chroot($fn);
-	local @recs = &bind8::read_zone_file($fn, $newzonename);
-	local @mx = grep { $_->{'type'} eq 'MX' &&
+	my $z = &virtual_server::get_bind_zone($d->{'dom'});
+	my $file = &bind8::find("file", $z->{'members'});
+	my $fn = $file->{'values'}->[0];
+	my $zonefile = &bind8::make_chroot($fn);
+	my @recs = &bind8::read_zone_file($fn, $newzonename);
+	my @mx = grep { $_->{'type'} eq 'MX' &&
 			   $_->{'name'} eq $_[0]->{'dom'}."." ||
 			   $_->{'type'} eq 'A' &&
 			   $_->{'name'} eq "mail.".$_[0]->{'dom'}."." } @recs;
@@ -377,8 +381,8 @@ return 1;
 # Returns a field for destination mail server
 sub feature_inputs
 {
-local ($d) = @_;
-local $tmpl = &virtual_server::get_template($d ? $d->{'template'} : 0);
+my ($d) = @_;
+my $tmpl = &virtual_server::get_template($d ? $d->{'template'} : 0);
 return &ui_table_row($text{'feat_server'},
 	&ui_opt_textbox($input_name."_server",
 			$tmpl->{$module_name."server"}, 30,
@@ -389,7 +393,7 @@ return &ui_table_row($text{'feat_server'},
 # Update the domain object with a custom destination mail server
 sub feature_inputs_parse
 {
-local ($d, $in) = @_;
+my ($d, $in) = @_;
 if (defined($in->{$input_name."_server"}) &&
     !$in->{$input_name."_server_def"}) {
 	&to_ipaddress($in->{$input_name."_server"}) ||
@@ -414,7 +418,7 @@ return ( { 'name' => $module_name."-server",
 # Parse command-line arguments from feature_args
 sub feature_args_parse
 {
-local ($d, $args) = @_;
+my ($d, $args) = @_;
 if (defined($args->{$module_name."-server"})) {
 	&to_ipaddress($args->{$module_name."-server"}) ||
 		return "Invalid mail server for relaying";
@@ -430,9 +434,9 @@ return undef;
 # or 0 if not
 sub feature_import
 {
-local ($dname, $user, $db) = @_;
-local $fake = { 'dom' => $dname };
-local $err = &feature_clash($fake);
+my ($dname, $user, $db) = @_;
+my $fake = { 'dom' => $dname };
+my $err = &feature_clash($fake);
 return $err ? 1 : 0;
 }
 
@@ -440,7 +444,7 @@ return $err ? 1 : 0;
 # Returns an array of link objects for webmin modules for this feature
 sub feature_links
 {
-local ($d) = @_;
+my ($d) = @_;
 return ( { 'mod' => $module_name,
            'desc' => $text{'links_link'},
            'page' => 'edit.cgi?dom='.$d->{'dom'},
@@ -453,7 +457,7 @@ return ( { 'mod' => $module_name,
 # the Webmin user when this feature is enabled
 sub feature_webmin
 {
-local @doms = map { $_->{'dom'} } grep { $_->{$module_name} } @{$_[1]};
+my @doms = map { $_->{'dom'} } grep { $_->{$module_name} } @{$_[1]};
 if (@doms) {
         return ( [ $module_name,
                    { 'dom' => join(" ", @doms),
@@ -475,9 +479,9 @@ return ( [ $module_name, $text{'feat_module'} ] );
 # Just saves the relay dest and spam flag
 sub feature_backup
 {
-local ($d, $file) = @_;
+my ($d, $file) = @_;
 &$virtual_server::first_print($text{'backup_conf'});
-local %binfo;
+my %binfo;
 $binfo{'dest'} = &get_relay_destination($d->{'dom'});
 if (&can_domain_filter()) {
 	$binfo{'filter'} = &get_domain_filter($d->{'dom'});
@@ -494,10 +498,10 @@ return 1;
 # Just re-sets the old relay dest and spam filter
 sub feature_restore
 {
-local ($d, $file) = @_;
+my ($d, $file) = @_;
 &$virtual_server::first_print($text{'restore_conf'});
 &obtain_lock_virtualmin_mailrelay($d);
-local %binfo;
+my %binfo;
 &read_file($file, \%binfo);
 if ($binfo{'dest'} ne '') {
 	&save_relay_destination($d->{'dom'}, $binfo{'dest'});
@@ -523,7 +527,7 @@ return $text{'backup_name'};
 # Checks that the mailertable or transport entry exists
 sub feature_validate
 {
-local ($d) = @_;
+my ($d) = @_;
 if (!&feature_clash($d)) {
 	return $virtual_server::config{'mail_system'} == 0 ?
 		$text{'validate_etransport'} :
@@ -536,12 +540,12 @@ return undef;
 # Returns HTML for editing per-template options for this plugin
 sub template_input
 {
-local ($tmpl) = @_;
+my ($tmpl) = @_;
 
 # Default SMTP server input
-local $v = $tmpl->{$module_name."server"};
+my $v = $tmpl->{$module_name."server"};
 $v = "none" if (!defined($v) && $tmpl->{'default'});
-local $rv;
+my $rv;
 $rv .= &ui_table_row($text{'tmpl_server'},
 	&ui_radio($input_name."_mode",
 		$v eq "" ? 0 : $v eq "none" ? 1 : 2,
@@ -552,7 +556,7 @@ $rv .= &ui_table_row($text{'tmpl_server'},
 
 # Default filter mode, if possible
 if (&can_domain_filter()) {
-	local $v = $tmpl->{$module_name."filter"};
+	my $v = $tmpl->{$module_name."filter"};
 	$v = "no" if (!defined($v) && $tmpl->{'default'});
 	$rv .= &ui_table_row($text{'tmpl_filter'},
 	    &ui_radio($input_name."_filter",
@@ -570,7 +574,7 @@ return $rv;
 # template_input. All template fields must start with the module name.
 sub template_parse
 {
-local ($tmpl, $in) = @_;
+my ($tmpl, $in) = @_;
 
 # Parse SMTP server field
 if ($in->{$input_name.'_mode'} == 0) {
@@ -594,4 +598,3 @@ if (defined($in->{$input_name."_filter"})) {
 }
 
 1;
-
