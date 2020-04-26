@@ -4,4 +4,3 @@ depends=virtual-server/4.13 1.390
 hidden=1
 version=2.0
 feedback=jcameron@webmin.com
-desc_nl=Virtualmin Mail Relais
