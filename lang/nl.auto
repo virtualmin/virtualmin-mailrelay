@@ -1,0 +1,9 @@
+feat_label2=Relay mail
+feat_module=Virtualmin Mail Relay (voor het configureren van bestemmingen)
+edit_from=Van adres
+edit_to=Om aan te pakken
+edit_date=Datum verzonden
+edit_subject=Onderwerpen
+edit_queue=Mail wachtrij
+edit_size=Berichtgrootte
+edit_noqueue=Er staan momenteel geen e-mailberichten in de wachtrij voor deze bestemming.
